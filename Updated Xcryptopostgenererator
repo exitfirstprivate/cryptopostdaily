@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C9A84C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CryptoPost">
+<link rel="manifest" href="manifest.json">
+<title>CryptoPost · @IsabelleGassen</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C; --gold-light: #e8c96a; --gold-dim: rgba(201,168,76,0.12);
+  --gold-border: rgba(201,168,76,0.25); --bg: #0A0A0A; --bg2: #111; --bg3: #181818;
+  --bg4: #1e1e1e; --text: #e8e0d0; --muted: #555; --muted2: #888; --red: #e85c4a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+
+/* LOCK SCREEN */
+#lockScreen {
+  position: fixed; inset: 0; background: var(--bg);
+  background-image: radial-gradient(ellipse at 60% 0%, rgba(201,168,76,0.07) 0%, transparent 60%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px; z-index: 999;
+}
+.lock-logo { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 4px; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+.lock-sub { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 3px; color: var(--muted); margin-bottom: 44px; }
+.lock-icon { font-size: 36px; margin-bottom: 20px; opacity: 0.6; }
+.lock-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 3px; color: var(--muted); margin-bottom: 10px; }
+.lock-input {
+  width: 100%; max-width: 320px; background: var(--bg2); border: 1px solid var(--gold-border);
+  border-radius: 12px; padding: 16px 18px; font-family: 'DM Mono', monospace; font-size: 16px;
+  color: var(--text); letter-spacing: 3px; text-align: center; outline: none; margin-bottom: 12px; transition: border-color 0.2s;
+}
+.lock-input:focus { border-color: var(--gold); }
+.lock-input.shake { animation: shake 0.3s ease; border-color: var(--red); }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+.lock-error { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red); margin-bottom: 10px; letter-spacing: 1px; display: none; }
+.lock-error.visible { display: block; }
+.lock-btn {
+  width: 100%; max-width: 320px; background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #000; border: none; border-radius: 12px; padding: 16px; font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: 3px; cursor: pointer;
+}
+.lock-hint { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-top: 20px; text-align: center; line-height: 2; }
+
+/* APP */
+#app { display: none; }
+#app.unlocked { display: block; }
+
+/* NAV */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--gold-border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+.nav-tab { flex: 1; padding: 12px 4px 10px; text-align: center; cursor: pointer; border: none; background: none; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1.5px; transition: color 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nav-tab .icon { font-size: 18px; }
+.nav-tab.active { color: var(--gold); }
+
+/* PAGES */
+.page { display: none; padding: 0 0 80px; min-height: 100vh; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* HEADER */
+.page-header { background: var(--bg2); border-bottom: 1px solid var(--gold-border); padding: 16px; position: sticky; top: 0; z-index: 50; }
+.page-header-inner { display: flex; align-items: center; justify-content: space-between; }
+.header-brand { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--gold); line-height: 1; }
+.header-sub { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+.date-pill { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 20px; padding: 5px 10px; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--gold); letter-spacing: 1px; }
+
+.scroll-content { padding: 16px; }
+.card { background: var(--bg2); border: 1px solid var(--gold-border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+.card-label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 3px; color: var(--gold); opacity: 0.7; margin-bottom: 12px; }
+
+/* TOPICS */
+.topics-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.topic-pill { background: var(--bg3); border: 1px solid var(--gold-border); border-radius: 20px; padding: 6px 12px; font-size: 10px; color: var(--muted2); cursor: pointer; transition: all 0.15s; font-family: 'DM Mono', monospace; user-select: none; }
+.topic-pill.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-light); }
+
+/* TONE */
+.tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tone-btn { background: var(--bg3); border: 1px solid var(--gold-border); border-radius: 10px; padding: 10px 8px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--muted2); cursor: pointer; text-align: center; transition: all 0.15s; }
+.tone-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.tone-emoji { font-size: 16px; display: block; margin-bottom: 4px; }
+
+/* GEN BUTTON */
+.gen-btn { width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #000; border: none; border-radius: 14px; padding: 18px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.gen-btn:active { transform: scale(0.98); }
+.gen-btn:disabled { opacity: 0.5; }
+.gen-btn .spin { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.gen-btn.loading .spin { display: block; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* OUTPUT */
+.output-wrap { background: var(--bg2); border: 1px solid var(--gold-border); border-radius: 14px; overflow: hidden; display: none; animation: fadeIn 0.3s ease; margin-bottom: 14px; }
+.output-wrap.visible { display: block; }
+.output-top { background: var(--bg3); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gold-border); }
+.output-handle { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gold); }
+.char-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted2); background: var(--bg4); border-radius: 6px; padding: 3px 8px; }
+.char-badge.warn { color: var(--gold); } .char-badge.over { color: var(--red); }
+.post-preview { padding: 16px; font-size: 13.5px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; min-height: 100px; }
+.post-preview .bracket { color: #fff; font-weight: 600; }
+.post-preview .hashtag { color: #4a9eff; }
+.output-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--gold-border); border-top: 1px solid var(--gold-border); }
+.out-btn { background: var(--bg2); border: none; padding: 12px 6px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--muted2); cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: all 0.15s; }
+.out-btn .btn-icon { font-size: 16px; }
+.out-btn:active { background: var(--bg3); color: var(--gold); }
+
+/* MODAL */
+.card-preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.card-preview-modal.visible { display: flex; }
+.preview-close { position: absolute; top: 16px; right: 16px; background: var(--bg3); border: 1px solid var(--gold-border); border-radius: 50%; width: 36px; height: 36px; color: var(--text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#xCard { width: 100%; max-width: 360px; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid #2a2a2a; box-shadow: 0 0 60px rgba(201,168,76,0.2); }
+.xcard-header { padding: 14px 16px 10px; display: flex; align-items: center; gap: 10px; }
+.xcard-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), #8a5a00); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #000; flex-shrink: 0; }
+.xcard-name { font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; color: #fff; line-height: 1.2; }
+.xcard-handle { font-size: 12px; color: #666; }
+.xcard-verified { margin-left: auto; color: var(--gold); font-size: 16px; }
+.xcard-img { width: 100%; height: 155px; background: linear-gradient(160deg, #0a0a0a 0%, #1a1208 50%, #0d0d0d 100%); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 16px; }
+.xcard-img::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(201,168,76,0.08) 0%, transparent 60%); }
+.xcard-img-label { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 3px; color: rgba(201,168,76,0.9); background: rgba(0,0,0,0.6); border: 1px solid rgba(201,168,76,0.3); padding: 5px 14px; border-radius: 4px; text-align: center; position: relative; z-index: 1; width: 100%; max-width: 260px; }
+.xcard-watermark { position: absolute; top: 10px; left: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 9px; letter-spacing: 2px; color: rgba(201,168,76,0.4); }
+.xcard-body { padding: 12px 16px 6px; font-size: 13px; line-height: 1.7; color: #e8e0d0; white-space: pre-wrap; word-break: break-word; }
+.xcard-body .bracket { color: #fff; font-weight: 700; } .xcard-body .hashtag { color: #4a9eff; }
+.xcard-footer { padding: 10px 16px 14px; display: flex; gap: 20px; color: #555; font-size: 12px; border-top: 1px solid #111; margin-top: 10px; }
+.preview-actions { margin-top: 16px; display: flex; gap: 10px; width: 100%; max-width: 360px; }
+.prev-btn { flex: 1; background: var(--bg3); border: 1px solid var(--gold-border); border-radius: 10px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--gold); cursor: pointer; text-align: center; }
+
+/* HISTORY */
+.history-empty { text-align: center; padding: 60px 20px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.history-empty .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.history-item { background: var(--bg2); border: 1px solid var(--gold-border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.history-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.history-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--gold); letter-spacing: 1px; }
+.history-topics { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted); }
+.history-preview { font-size: 12px; line-height: 1.6; color: var(--muted2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.history-actions { display: flex; gap: 8px; margin-top: 10px; }
+.hist-btn { background: var(--bg3); border: 1px solid var(--gold-border); border-radius: 7px; padding: 6px 10px; font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted2); cursor: pointer; letter-spacing: 1px; }
+.hist-btn.del { color: var(--red); border-color: rgba(232,92,74,0.2); }
+.clear-all-btn { width: 100%; background: transparent; border: 1px solid rgba(232,92,74,0.2); border-radius: 10px; padding: 12px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red); letter-spacing: 1px; cursor: pointer; margin-bottom: 14px; }
+
+.error-toast { background: rgba(232,92,74,0.1); border: 1px solid rgba(232,92,74,0.3); border-radius: 10px; padding: 12px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--red); display: none; margin-bottom: 12px; }
+.error-toast.visible { display: block; }
+
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--gold); color: #000; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: all 0.3s; z-index: 300; white-space: nowrap; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-logo">CRYPTOPOST</div>
+  <div class="lock-sub">@ISABELLEGASSEN · PRIVATE ACCESS</div>
+  <div class="lock-icon">🔐</div>
+  <div class="lock-label">ENTER ACCESS PASSWORD</div>
+  <input class="lock-input" type="password" id="pwInput" placeholder="••••••••••••••••" maxlength="32" autocomplete="off">
+  <div class="lock-error" id="lockError">⚠ INCORRECT PASSWORD</div>
+  <button class="lock-btn" onclick="checkPassword()">UNLOCK</button>
+  <div class="lock-hint">Open via @ClawCryptoBalance_Bot<br>or enter your password</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="page active" id="page-generate">
+    <div class="page-header">
+      <div class="page-header-inner">
+        <div><div class="header-brand">CRYPTOPOST</div><div class="header-sub">@ISABELLEGASSEN · DAILY X GENERATOR</div></div>
+        <div class="date-pill" id="datePill">—</div>
+      </div>
+    </div>
+    <div class="scroll-content">
+      <div class="card">
+        <div class="card-label">⬡ TOPICS — PICK 2 OR 3</div>
+        <div class="topics-grid">
+          <div class="topic-pill active" data-topic="BTC">BTC</div>
+          <div class="topic-pill" data-topic="ETH">ETH</div>
+          <div class="topic-pill active" data-topic="RWA">RWA</div>
+          <div class="topic-pill" data-topic="DeFi">DeFi</div>
+          <div class="topic-pill active" data-topic="Regulation">Regulation</div>
+          <div class="topic-pill" data-topic="AI + Crypto">AI + Crypto</div>
+          <div class="topic-pill" data-topic="Stablecoins">Stablecoins</div>
+          <div class="topic-pill" data-topic="Layer 2">Layer 2</div>
+          <div class="topic-pill" data-topic="Institutional">Institutional</div>
+          <div class="topic-pill" data-topic="Privacy">Privacy</div>
+          <div class="topic-pill" data-topic="NFTs">NFTs</div>
+          <div class="topic-pill" data-topic="Memecoins">Memecoins</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">⬡ TONE</div>
+        <div class="tone-grid">
+          <div class="tone-btn active" data-tone="intel"><span class="tone-emoji">🔐</span>INTEL DROP</div>
+          <div class="tone-btn" data-tone="alpha"><span class="tone-emoji">⚡</span>ALPHA LEAK</div>
+          <div class="tone-btn" data-tone="urgent"><span class="tone-emoji">🚨</span>URGENT</div>
+          <div class="tone-btn" data-tone="luxury"><span class="tone-emoji">✈️</span>LUXURY</div>
+        </div>
+      </div>
+      <div class="error-toast" id="errorToast"></div>
+      <button class="gen-btn" id="genBtn" onclick="generatePost()">
+        <div class="spin"></div><span id="btnText">GENERATE POST</span>
+      </button>
+      <div class="output-wrap" id="outputWrap">
+        <div class="output-top">
+          <span class="output-handle">@IsabelleGassen</span>
+          <span class="char-badge" id="charBadge">0 / 280</span>
+        </div>
+        <div class="post-preview" id="postPreview"></div>
+        <div class="output-actions">
+          <button class="out-btn" onclick="copyPost()"><span class="btn-icon">📋</span>COPY</button>
+          <button class="out-btn" onclick="showCardPreview()"><span class="btn-icon">🖼️</span>PREVIEW</button>
+          <button class="out-btn" onclick="saveToHistory()"><span class="btn-icon">💾</span>SAVE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-history">
+    <div class="page-header">
+      <div class="page-header-inner">
+        <div><div class="header-brand">HISTORY</div><div class="header-sub">SAVED POSTS</div></div>
+        <div class="date-pill" id="histCount">0 POSTS</div>
+      </div>
+    </div>
+    <div class="scroll-content" id="historyList"></div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-tab active" onclick="switchTab('generate',this)"><span class="icon">⚡</span>GENERATE</button>
+    <button class="nav-tab" onclick="switchTab('history',this)"><span class="icon">📁</span>HISTORY</button>
+  </nav>
+</div>
+
+<!-- CARD MODAL -->
+<div class="card-preview-modal" id="cardModal">
+  <button class="preview-close" onclick="closeModal()">✕</button>
+  <div id="xCard">
+    <div class="xcard-header">
+      <div class="xcard-avatar">IG</div>
+      <div><div class="xcard-name">Isabelle Gassen</div><div class="xcard-handle">@IsabelleGassen</div></div>
+      <div class="xcard-verified">✦</div>
+    </div>
+    <div class="xcard-img">
+      <div class="xcard-watermark">EXITFIRST · @ISABELLEGASSEN</div>
+      <div class="xcard-img-label" id="xCardLabel1"></div>
+      <div class="xcard-img-label" id="xCardLabel2"></div>
+      <div class="xcard-img-label" id="xCardLabel3"></div>
+    </div>
+    <div class="xcard-body" id="xCardBody"></div>
+    <div class="xcard-footer"><span>💬 Reply</span><span>🔁 Repost</span><span>❤️ Like</span><span>📊 View</span></div>
+  </div>
+  <div class="preview-actions">
+    <button class="prev-btn" onclick="closeModal()">CLOSE</button>
+    <button class="prev-btn" onclick="copyPost();closeModal()">COPY & POST</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SECURITY ──
+const APP_PASSWORD = 'vemdd71mrgdSixKZ';
+const TOKEN_SECRET = '0mbCKgQorEzCpcCk8tKhjUbYMToqiNilGbT-RgZ3OrA';
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function hmac(msg, secret) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function boot() {
+  // 1. Check saved session
+  if (sessionStorage.getItem('cp_unlocked') === 'true') { unlockApp(); return; }
+  // 2. Check URL token
+  const token = new URLSearchParams(location.search).get('token');
+  if (token) {
+    const today = new Date().toISOString().slice(0,10);
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const [t1, t2] = await Promise.all([hmac(today, TOKEN_SECRET), hmac(yesterday, TOKEN_SECRET)]);
+    if (token === t1 || token === t2) {
+      sessionStorage.setItem('cp_unlocked','true');
+      history.replaceState({}, '', location.pathname);
+      unlockApp(); return;
+    }
+  }
+  // Show lock screen (already visible by default)
+}
+
+async function checkPassword() {
+  const input = document.getElementById('pwInput').value;
+  const [inputHash, correctHash] = await Promise.all([sha256(input), sha256(APP_PASSWORD)]);
+  if (inputHash === correctHash) {
+    sessionStorage.setItem('cp_unlocked','true');
+    unlockApp();
+  } else {
+    const inp = document.getElementById('pwInput');
+    document.getElementById('lockError').classList.add('visible');
+    inp.classList.add('shake');
+    setTimeout(()=>inp.classList.remove('shake'), 400);
+    inp.value = '';
+  }
+}
+
+document.getElementById('pwInput').addEventListener('keydown', e => { if(e.key==='Enter') checkPassword(); });
+
+function unlockApp() {
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+boot();
+
+// ── APP ──
+let currentPost = '', currentTopics = [], currentTone = 'intel';
+
+function initApp() {
+  const now = new Date();
+  document.getElementById('datePill').textContent = now.toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();
+  document.querySelectorAll('.topic-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const active = document.querySelectorAll('.topic-pill.active');
+      if (pill.classList.contains('active')) { if(active.length>1) pill.classList.remove('active'); }
+      else { if(active.length<3) pill.classList.add('active'); }
+    });
+  });
+  document.querySelectorAll('.tone-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tone-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); currentTone = btn.dataset.tone;
+    });
+  });
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history') renderHistory();
+}
+
+const tones = {
+  intel: 'structured intel briefing with [ HEADER ] labels per topic. Tone: cold, authoritative, elite insider. No emojis.',
+  alpha: 'alpha leak style. Start with ⚡ or 🔓. Tone: secretive, urgent, exclusive.',
+  urgent: 'breaking news. Start with 🚨 or ⚠️. Tone: fast, punchy, alarming.',
+  luxury: 'luxury crypto lifestyle tied to wealth, freedom, private jets. Tone: refined, aspirational.'
+};
+
+async function generatePost() {
+  const topics = [...document.querySelectorAll('.topic-pill.active')].map(p=>p.dataset.topic);
+  const tone = document.querySelector('.tone-btn.active').dataset.tone;
+  const today = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  currentTopics = topics; currentTone = tone;
+  const btn = document.getElementById('genBtn');
+  btn.disabled=true; btn.classList.add('loading');
+  document.getElementById('btnText').textContent='GENERATING...';
+  document.getElementById('errorToast').classList.remove('visible');
+
+  const prompt = `You are a crypto intel content creator for @IsabelleGassen on X.\nDate: ${today}\nTopics: ${topics.join(', ')}\nStyle: ${tones[tone]}\nWrite ONE X post:\n- [ TOPIC HEADER ] brackets per topic (ALL CAPS)\n- 1-2 punchy sentences per point\n- 2-3 #hashtags inline\n- End with 2-3 standalone hashtag lines\n- 220-260 chars, NEVER exceed 280\n- Output ONLY the post text.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const text = data.content.map(b=>b.text||'').join('').trim();
+    currentPost = text; renderPost(text);
+    document.getElementById('outputWrap').classList.add('visible');
+    document.getElementById('outputWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch(err) {
+    const et = document.getElementById('errorToast');
+    et.textContent = '⚠ '+(err.message||'Generation failed. Try again.');
+    et.classList.add('visible');
+  }
+  btn.disabled=false; btn.classList.remove('loading');
+  document.getElementById('btnText').textContent='GENERATE POST';
+}
+
+function renderPost(text) {
+  const html = text.replace(/\[([^\]]+)\]/g,'<span class="bracket">[$1]</span>').replace(/#(\w+)/g,'<span class="hashtag">#$1</span>');
+  document.getElementById('postPreview').innerHTML = html;
+  const len = text.length;
+  const badge = document.getElementById('charBadge');
+  badge.textContent = `${len} / 280`;
+  badge.className = 'char-badge'+(len>280?' over':len>240?' warn':'');
+}
+
+function copyPost() { if(!currentPost) return; navigator.clipboard.writeText(currentPost).then(()=>showToast('COPIED TO CLIPBOARD')); }
+
+function showCardPreview() {
+  if(!currentPost) return;
+  const brackets = [...currentPost.matchAll(/\[([^\]]+)\]/g)].map(m=>m[1]);
+  ['xCardLabel1','xCardLabel2','xCardLabel3'].forEach((id,i)=>{
+    const el=document.getElementById(id); el.textContent=brackets[i]||''; el.style.display=brackets[i]?'block':'none';
+  });
+  document.getElementById('xCardBody').innerHTML = currentPost.replace(/\[([^\]]+)\]/g,'<span class="bracket">[$1]</span>').replace(/#(\w+)/g,'<span class="hashtag">#$1</span>');
+  document.getElementById('cardModal').classList.add('visible');
+}
+function closeModal() { document.getElementById('cardModal').classList.remove('visible'); }
+
+function saveToHistory() {
+  if(!currentPost) return;
+  const history = getHistory();
+  history.unshift({id:Date.now(), date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), topics:currentTopics, tone:currentTone, post:currentPost});
+  localStorage.setItem('cp_history', JSON.stringify(history.slice(0,50)));
+  showToast('SAVED TO HISTORY');
+}
+
+function getHistory() { try{return JSON.parse(localStorage.getItem('cp_history')||'[]')}catch{return[]} }
+
+function renderHistory() {
+  const history = getHistory();
+  const list = document.getElementById('historyList');
+  document.getElementById('histCount').textContent = history.length+' POSTS';
+  if(!history.length){ list.innerHTML=`<div class="history-empty"><div class="empty-icon">📭</div>NO SAVED POSTS YET<br><br>Generate and tap SAVE</div>`; return; }
+  list.innerHTML='';
+  const cb=document.createElement('button'); cb.className='clear-all-btn'; cb.textContent='⚠ CLEAR ALL HISTORY';
+  cb.onclick=()=>{if(confirm('Delete all?')){localStorage.removeItem('cp_history');renderHistory();}};
+  list.appendChild(cb);
+  history.forEach(e=>{
+    const div=document.createElement('div'); div.className='history-item';
+    div.innerHTML=`<div class="history-meta"><span class="history-date">${e.date}</span><span class="history-topics">${(e.topics||[]).join(' · ')}</span></div><div class="history-preview">${e.post}</div><div class="history-actions"><button class="hist-btn" onclick="loadH(${e.id})">LOAD</button><button class="hist-btn" onclick="copyH(${e.id})">COPY</button><button class="hist-btn del" onclick="delH(${e.id})">DELETE</button></div>`;
+    list.appendChild(div);
+  });
+}
+
+function loadH(id){ const e=getHistory().find(x=>x.id===id); if(!e)return; currentPost=e.post; renderPost(e.post); document.getElementById('outputWrap').classList.add('visible'); switchTab('generate',document.querySelectorAll('.nav-tab')[0]); showToast('POST LOADED'); }
+function copyH(id){ const e=getHistory().find(x=>x.id===id); if(e) navigator.clipboard.writeText(e.post).then(()=>showToast('COPIED')); }
+function delH(id){ localStorage.setItem('cp_history',JSON.stringify(getHistory().filter(x=>x.id!==id))); renderHistory(); }
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+</script>
+</body>
+</html>
